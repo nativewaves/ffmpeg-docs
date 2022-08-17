@@ -1,0 +1,44 @@
+version: 2.1
+parameters:
+  skip_build:
+    type: string
+    default: "true"
+    description: Skip building already existing versions
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2204:current
+    parameters:
+      skip_build:
+        type: string
+    environment:
+      SKIP_BUILD: <<parameters.skip_build>>
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - ffmpeg-docs_{{ .Branch }}
+      - run:
+          name: Install doxygen
+          command: sudo apt-get update && sudo apt-get install doxygen
+      - run:
+          name: Build FFmpeg Documentation
+          command: bash build-all.sh
+      - save_cache:
+          key: ffmpeg-docs_{{ .Branch }}-{{ .BuildNum }}
+          paths: output
+      - aws-s3/sync:
+          from: output
+          to: s3://${AWS_ACCOUNT_ID}-nw-apps-us-east-1/ffmpeg-docs
+          arguments: --delete
+
+orbs:
+  aws-s3: circleci/aws-s3@3.0.0
+
+workflows:
+  build:
+    jobs:
+      - build:
+          skip_build: <<pipeline.parameters.skip_build>>
+          context: cloud-tools-prod
