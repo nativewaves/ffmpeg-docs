@@ -42,5 +42,5 @@ git clone https://github.com/nativewaves/ffmpeg-docs
 cd ffmpeg-docs
 
 # Build the API documentation for all stable FFmpeg versions
-../build-all.sh
+./build-all.sh
 ```
